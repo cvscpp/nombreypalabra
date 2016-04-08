@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Demo</title>
+  <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/../dijit/themes/claro/claro.css">
+<script src="//ajax.googleapis.com/ajax/libs/dojo/1.10.4/dojo/dojo.js" data-dojo-config="async: true" djConfig="parseOnLoad: true"></script>
+
+<script>
+var getJSON = function(url) {
+console.log("getJson: " + url);
+  return new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'text/json';
+    xhr.onreadystatechange = function() {
+    if (xhr.readyState == 4 ){
+      var status = xhr.status;
+       if (status == 200) {
+        resolve(xhr.response);
+       } else {
+         reject(status);
+       }
+       console.log(status);
+    };
+    };
+    xhr.send();
+  });
+};
+</script>
+
+
+<script type="text/javascript">   
+
+require(["dojo/parser", "dijit/registry", "dojo/on", "dijit/form/TextBox", "dojo/domReady!"],
+    function(parser, registry, on){
+		parser.parse();
+		aurl = "http://dax:8888";
+		var box0 = registry.byId("value0Box");
+    
+		on(box0, "change", function(){
+			var names = aurl + "/" + box0.get("value");
+			getJSON(aurl+"/"+box0.get("value")).then(
+				function(data) {
+					console.log("data: " + data);
+					var jdata = JSON.parse(data);
+					require(["dijit/Tooltip", "dojo/domReady!"], function(Tooltip){
+					new Tooltip({connetId: ["value0Box"], label: jdata.value[0]});
+					});
+				}, 
+				function(status) { //error detection....
+// 					alert('Something went wrong.');
+				}
+			);
+		});
+});
+
+
+</script>
+</head>  
+  <body> 
+  <label for="value0Box">Input:</label> <input id="value0Box" data-dojo-type="dijit/form/TextBox" value="" data-dojo-props="intermediateChanges:true"></input>
+  <body> 
+ </html>
