@@ -1,98 +1,141 @@
 #!/usr/bin/python
 
+from optparse import OptionParser
 import socket
 import fileinput
 import json
 
 JQ = 0
 DJ = 1
+DMSIMPLE = 0
+DMFULL = 1
 
-clType = JQ
-
-delimiter = '%7C' ### |
+#delimiter = '%7C' ### |
 #delimiter = '%2C' ### ,
 
-HOST, PORT = '', 8888
+DEVNULL = "/dev/null"
+HOST = "127.0.1.1"
+PORT = "8888"
+DATAMODE = DMSIMPLE
+CLIENT = JQ
 
-listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
-listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-listen_socket.bind((HOST, PORT))
-listen_socket.listen(1)
+def getcmdline():
+	usage = "usage: %prog [options] arg"
+	p = OptionParser()
+	p.add_option("--host", action = "store", dest = "host", help = ('Listen to IP [default: %s]'%(HOST)), default = HOST)
+	p.add_option("--port", action = "store", dest = "port", help = ('Listen to port [default: %s]'%(PORT)), default = PORT)
+	p.add_option("--data", action = "store", dest = "data", help = ('Import data from [default: %s]'%(DEVNULL)), default = DEVNULL)
+	p.add_option("--datamode", action = "store", dest = "datamode", help = ('Data mode: 0 - only first name search, 1 - full name search [default: %d]'%(DATAMODE)), default = DATAMODE)
+	p.add_option("--client", action = "store", dest = "client", help = ('Client type: 0 - jquery, 1 - other [default: %d]'%(CLIENT)), default = CLIENT)
 
-print 'Importing names...'
+	(o, a) = p.parse_args()
+	return o
 
 
-names = {}
 
-for l in fileinput.input("names.data"):
-	sl = l.split(" ");
-	k = sl[0].rstrip()
-	if  k in names:
-		names[k] += '|' + l.rstrip()
-	else:
-		names[k] = l.rstrip()
-
-print "Done. Imported " + str(len(names)) + " names."
-
-print 'Serving HTTP on port %s ...' % PORT
-
-while True:
-	client_connection, client_address = listen_socket.accept()
-	request = client_connection.recv(2048)
-	print request
-	req = request.split(" ")
-	req_string = req[1].split("/")[1]
-	print "req_string: ",req_string
-
-	if clType == JQ:
-		f_search_string = req_string.split("=")[1]
-	if clType == DJ:
-		f_search_string = req_string
-	
-	sf_search_string = f_search_string.split(delimiter)
-	
-	print 'sf_search_string: ',sf_search_string
-	
-	if len(sf_search_string)>1:
-		search_string = sf_search_string[len(sf_search_string)-1].strip()
-	else:
-		search_string = f_search_string.strip()
-	
-	print "Search string: " + search_string
+def main():
+	o = getcmdline()
+	c = {}
+	c['host'] = str(o.host)
+	c['port'] = int(o.port)
+	c['data'] = str(o.data)
+	c['datamode'] = int(o.datamode)
+	c['client'] = int(o.client)
 	
 
-	fnamesl = []
-	
-	if len(search_string) > 0:
-		for key, value in names.items():
-			if search_string in key:
-				fnamesl.append(value)
+	listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+	listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	listen_socket.bind((c['host'], c['port']))
+	listen_socket.listen(1)
+
+	print 'Importing names...'
+
+	names = {}
+
+	for L in fileinput.input("names.data"):
+		l = L.strip()
+		sl = l.split(" ");
+		if c['datamode'] == DMFULL:
+			rl = l.replace(" ","+");
+			names[rl] = l;
+			for j in range(len(sl)):
+				k = sl[j].rstrip()
+				if  k in names:
+					names[k] += '|' + l
+				else:
+					names[k] = l
+		if c['datamode'] == DMSIMPLE:
+			k = sl[0].rstrip()
+			if  k in names:
+				names[k] += '|' + l
+			else:
+				names[k] = l
+
+	print "Done. Imported " + str(len(names)) + " names."
+
+	print 'Serving HTTP on port %s ...' % PORT
+
+	while True:
+		client_connection, client_address = listen_socket.accept()
+		request = client_connection.recv(2048)
+		print request
+		req = request.split(" ")
+		req_string = req[1].split("/")[1]
+		print "req_string: ",req_string
+
+		if c['client'] == JQ:
+			search_string = req_string.split("=")[1]
+		if c['client'] == DJ:
+			search_string = req_string
+
+
+		#sf_search_string = f_search_string.split(delimiter)
 		
-		print len(fnamesl)
-	fnames = []
-	for vals in fnamesl:
-		for sub_val in vals.split("|"):
-			fnames.append('{"label":"%s", "value":"%s"}'%(sub_val,sub_val))
-	print 'fnames: ',fnames
-	ret = ','.join(fnames)
-	print "json: ",ret
-	lret = len(ret) + 2;
+		#print 'sf_search_string: ',sf_search_string
+		
+		#if len(sf_search_string)>1:
+			#search_string = sf_search_string[len(sf_search_string)-1].strip()
+		#else:
+			#search_string = f_search_string.strip()
 
-	rehead_proto = 'HTTP/1.1'
-	rehead_status = '200'
-	rehead_status_text = 'OK'
-	if clType == JQ:
-		rehead_content_type = 'Content-Type: text/javascript; charset=UTF-8'
-	if clType == DJ:
-		rehead_content_type = 'Content-Type: text/json; charset=UTF-8'
-	rehead_content_length = str(lret)
-	rehead_control = 'Access-Control-Allow-Origin: *'
-	rehead_close = 'Connection: close'
+		print "Search string: " + search_string
+		
 
-	body = '[%s]'%(ret)
+		fnamesl = []
+		
+		if len(search_string) > 0:
+			for key, value in names.items():
+				if search_string in key:
+					fnamesl.append(value)
+			
+			print len(fnamesl)
+		fnames = []
+		for vals in fnamesl:
+			for sub_val in vals.split("|"):
+				fnames.append('{"label":"%s", "value":"%s"}'%(sub_val,sub_val))
+		print 'fnames: ',fnames
+		ret = ','.join(fnames)
+		print "json: ",ret
+		lret = len(ret) + 2;
 
-	client_connection.send('%s\n%s\n%s\n%s\n%s\n%s\n%s\n'%(rehead_proto,rehead_status,rehead_status_text,rehead_content_type,rehead_content_length,rehead_control,rehead_close))
-	client_connection.send('\n')
-	client_connection.send(body)
-	client_connection.send('\n')
-	client_connection.close()
+		rehead_proto = 'HTTP/1.1'
+		rehead_status = '200'
+		rehead_status_text = 'OK'
+		if c['client'] == JQ:
+			rehead_content_type = 'Content-Type: text/javascript; charset=UTF-8'
+		if c['client'] == DJ:
+			rehead_content_type = 'Content-Type: text/json; charset=UTF-8'
+		rehead_content_length = str(lret)
+		rehead_control = 'Access-Control-Allow-Origin: *'
+		rehead_close = 'Connection: close'
+
+		body = '[%s]'%(ret)
+
+		client_connection.sendall('%s\n%s\n%s\n%s\n%s\n%s\n%s\n'%(rehead_proto,rehead_status,rehead_status_text,rehead_content_type,rehead_content_length,rehead_control,rehead_close))
+		client_connection.sendall('\n')
+		client_connection.sendall(body)
+		client_connection.sendall('\n')
+		client_connection.close()
+		
+if __name__ == "__main__":
+	main()
