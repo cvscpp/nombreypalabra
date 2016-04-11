@@ -41,7 +41,6 @@ def main():
 	c['data'] = str(o.data)
 	c['datamode'] = int(o.datamode)
 	c['client'] = int(o.client)
-	
 
 	listen_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
 	listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -80,7 +79,13 @@ def main():
 		request = client_connection.recv(2048)
 		print request
 		req = request.split(" ")
-		req_string = req[1].split("/")[1]
+		sreq_string = req[1].split("/")
+		lsreq_string = len(sreq_string)
+		if lsreq_string > 1:
+			req_string = sreq_string[lsreq_string-1]
+		else:
+			req_string = sreq_string[1]
+			
 		print "req_string: ",req_string
 
 		if c['client'] == JQ:
@@ -88,18 +93,7 @@ def main():
 		if c['client'] == DJ:
 			search_string = req_string
 
-
-		#sf_search_string = f_search_string.split(delimiter)
-		
-		#print 'sf_search_string: ',sf_search_string
-		
-		#if len(sf_search_string)>1:
-			#search_string = sf_search_string[len(sf_search_string)-1].strip()
-		#else:
-			#search_string = f_search_string.strip()
-
 		print "Search string: " + search_string
-		
 
 		fnamesl = []
 		
@@ -131,11 +125,11 @@ def main():
 
 		body = '[%s]'%(ret)
 
-		client_connection.sendall('%s\n%s\n%s\n%s\n%s\n%s\n%s\n'%(rehead_proto,rehead_status,rehead_status_text,rehead_content_type,rehead_content_length,rehead_control,rehead_close))
+		client_connection.sendall('%s %s %s\n%s\n%s\n%s\n%s\n'%(rehead_proto,rehead_status,rehead_status_text,rehead_content_type,rehead_content_length,rehead_control,rehead_close))
 		client_connection.sendall('\n')
 		client_connection.sendall(body)
 		client_connection.sendall('\n')
 		client_connection.close()
-		
+
 if __name__ == "__main__":
 	main()

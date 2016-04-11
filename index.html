@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <title>Demo</title>
   
-  <link rel="stylesheet" href="http://alexandria-project.eu/archivesearch/namecompletor/jquery-ui-1.11.4.custom/jquery-ui.css">
-  <script src="http://alexandria-project.eu/archivesearch/namecompletor/jquery-ui-1.11.4.custom/jquery.js"></script>
-  <script src="http://alexandria-project.eu/archivesearch/namecompletor/jquery-ui-1.11.4.custom/jquery-ui.js"></script>
+  <link rel="stylesheet" href="jquery/jquery-ui.min.css">
+  <script src="jquery/jquery.min.js"></script>
+  <script src="jquery/jquery-ui.min.js"></script>
   
   <style> #names { width:600px; } </style>
   
@@ -29,7 +29,7 @@
       })
       .autocomplete({
         source: function( request, response ) {
-          $.getJSON( "http://dax:8888", {
+           $.getJSON( "http://dax:8888", {
             term: extractLast( request.term )
           }, response );
         },
