@@ -51,7 +51,7 @@ def main():
 
 	names = {}
 
-	for L in fileinput.input("names.data"):
+	for L in fileinput.input(c['data']):
 		l = L.strip()
 		sl = l.split(" ");
 		if c['datamode'] == DMFULL:
