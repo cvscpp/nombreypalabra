@@ -14,7 +14,7 @@ DMFULL = 1
 #delimiter = '%2C' ### ,
 
 DEVNULL = "/dev/null"
-HOST = "127.0.1.1"
+HOST = "127.0.0.1"
 PORT = "8888"
 DATAMODE = DMSIMPLE
 CLIENT = JQ

@@ -35,7 +35,7 @@ console.log("getJson: " + url);
 require(["dojo/parser", "dijit/registry", "dojo/on", "dijit/form/TextBox", "dojo/domReady!"],
     function(parser, registry, on){
 		parser.parse();
-		aurl = "http://dax:8888";
+		aurl = "http://localhost:8888";
 		var box0 = registry.byId("value0Box");
     
 		on(box0, "change", function(){

@@ -29,7 +29,7 @@
       })
       .autocomplete({
         source: function( request, response ) {
-           $.getJSON( "http://dax:8888", {
+           $.getJSON( "http://localhost:8888", {
             term: extractLast( request.term )
           }, response );
         },
